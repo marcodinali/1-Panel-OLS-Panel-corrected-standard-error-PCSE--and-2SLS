@@ -7,7 +7,7 @@
 // This code is for Stata. Some commands may not work or may require specific packages. Please check your Stata version and installed packages before running the code.
 
 // First step after importing the variables is to define the panel
-import delimited "https://raw.githubusercontent.com/marcodinali/2-Panel-OLS-and-Feasible-generalized-Least-Squares-GLS-linear-model-/refs/heads/main/Data_firms.txt"
+import delimited "https://raw.githubusercontent.com/marcodinali/1-Panel-OLS-Panel-corrected-standard-error-PCSE--and-2SLS/refs/heads/main/Data_country.txt"
 
 // ##############//#########################################
 // 1 - Panel OLS - fixed effect vs Random effects
