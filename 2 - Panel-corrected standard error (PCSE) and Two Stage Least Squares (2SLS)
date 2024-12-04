@@ -129,6 +129,9 @@ estat overid
 // ############################################
 // The command "l.variable" (for example: l.ln_fdigdp) indicates the lag (if the year starts in 2003, for this variable it starts in 2004)
 // Model 1
+ssc install ivreg2
+ssc install ranktest 
+
 ivreg2 ln_co2ton (ln_fdi = ln_fdigdp l.ln_fdigdp  l.ln_gdpconst) ln_ict  ln_trade ln_pop ln_gdpconst y_2003-y_2019, robust endog(ln_fdi) 
 
 
