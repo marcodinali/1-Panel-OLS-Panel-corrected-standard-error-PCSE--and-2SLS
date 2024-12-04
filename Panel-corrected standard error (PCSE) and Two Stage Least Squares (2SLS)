@@ -1,0 +1,150 @@
+// ##########################################################################
+// Panel-corrected standard error (PCSE) and Two Stage Least Squares (2SLS)
+// ##########################################################################
+
+// NOTE: If you have imported the data from the other example, you can jump these steps. Go to line 81.
+
+// You can download and import manualy from a tx file too (always use dots in your data inseat of comma for all values). 
+// To mitigate potential pathing errors, it is advisable to employ a simplified file location, such as the "Desktop" directory, for initial file storage)
+
+// For macOS use the following path:
+insheet using "/Users/YourComputerName/Desktop/Panel.txt"
+
+// For Windows use the following path:
+insheet using "C:\Users\YourComputerName\Desktop\Panel.txt" 
+
+// Identify your panel 
+xtset id t 
+
+// The command "set more off" disables pagination, allowing the entirety of the output to be displayed simultaneously at once. 
+set more off
+
+// This data base is created by myself and is available for use under the specified LICENSE. You can use it under this license. 
+// The commands demonstrated herein may be adapted and replicated for application within your own respective panels and variables, enabling customization and extension of the presented techniques.
+
+// Description of variables.
+// co2ton = CO2 emissions (metric tons per capita).
+// fin = financial development of the country.
+// fdigdp = foreign direct investment by GDP (in thousands of dollars).
+// fdi = volume of FDi (inflow in thousands of dollars).
+// trade = volume of imports and exports (in thousands of dollars).
+// exportgdp = volume of goods exported (in thousands of dollars).
+// creditgdp = bank credit by GDP (in thousands of dollars).
+// ict = bank credit by GDP (in thousands of dollars).
+// medhighex = medium and high technology exported.
+// pop = total population
+// labor = total number of employed people
+// gdpcon = constant gdp (in thousands of dollars).
+// gdpcon = constant gdp per capita (in thousands of dollars).
+
+// To facilitate analysis, we will employ a logarithmic transformation of the variables. To transform the variables into natural logarithm use the command "gen" to generate a new variable name equal the variable with ln(your variable).
+// gen ln_your_new_variable = ln(your_variable_from_the_database)
+
+gen ln_co2ton = ln(co2ton)
+gen ln_fin = ln(fin)                    
+gen ln_fdigdp = ln(fdigdp)
+gen ln_fdi = ln(fdi)                    
+gen ln_trade= ln(trade)
+gen ln_exportgdp = ln(exportgdp)
+gen ln_creditgdp = ln(creditgdp)
+gen ln_ict = ln(ict)
+gen ln_medhighexp = ln(medhighex)
+gen ln_pop = ln(pop)
+gen ln_labor= ln(labor)
+gen ln_gdpconst = ln(gdpcon)
+gen ln_gdpppconst = ln(gdpppconst)
+
+// ############################################
+// Prais–Winsten regression
+// ############################################
+// command: xtpcse 
+// Why we are using the Prais–Winsten regression? We have problems of heteroskedasticity and first-order autocorrelation.
+// Used for long panels, i.e. T > N. It is more efficient than OLS in this case (When T is very large, more than 20 or 25 years. Ideal > 30 years).
+// To correct the heteroskedasticity problem use the hetonly command and to correct autocorrelation use the correlation(ar1) command:
+// Use the option when there is heteroskedasticity: hetonly
+// Use the option when there is serial autocorrelation: correlation(ar1)
+
+// Model 1 (usually test only your control variables)
+xtpcse ln_co2ton ln_trade ln_pop ln_gdpconst y_2003-y_2020, hetonly correlation(ar1)
+// Model 2 (ln_fdi)
+xtpcse ln_co2ton ln_fdi ln_trade ln_pop ln_gdpconst y_2003-y_2020, hetonly correlation(ar1)
+// Model 3 (ln_fin)
+xtpcse ln_co2ton ln_fin ln_trade ln_pop ln_gdpconst y_2003-y_2020, hetonly correlation(ar1)
+// Model 4 (ln_ict)
+xtpcse ln_co2ton ln_ict ln_trade ln_pop ln_gdpconst y_2003-y_2020, hetonly correlation(ar1)
+
+// Now we have some mor einteresting results. Explanatory variables were significant and showed more consitent results according with the literature. 
+// However, it is somewhat too simplistic to say that this results are correct, correct =) ?
+// Lest check the robustness of this estimate using other estimator.
+// To test the robustness using the 2SLS Two Stage Least Squares using the same data, use:
+
+// ############################################
+// Two Stage Least Squares (2SLS) - ivregress
+// ############################################
+// The command can be ivreg2 or ivregress, they are the same thing. They are just formulated by different professors/authors.
+// The command (, robust) at the end is used to correct heteroskedasticity.
+
+// Model 1: I will use the following variables as instruments for the ln_fdi: ln_gdpconst l.ln_gdpconst.
+// For example, Existing research suggests a positive correlation between foreign direct investment (FDI) and GDP, with FDI tending to favor countries exhibiting higher GDP levels. 
+// Furthermore, the incorporation of GDP as an instrument will be explored both with and without a temporal lag to assess the potential impact of lagged effects. 
+// This dual approach allows for a more comprehensive examination of the relationship between GDP and FDI, accounting for potential temporal dynamics.
+// Never use another instrument in a vague/random way. Please stablish a conection with your endogenous variable. This connect must be theorethical or empirical. 
+
+// There are two ways to estima the Two Stage Least Squares - 2sls
+// You can use the commands: ivregress 2sls or ivreg2. 
+// Both must produce the same/identical estimates.
+
+// Model 1 
+ ivregress 2sls ln_co2ton (ln_fdi = ln_fdigdp l.ln_fdigdp  l.ln_gdpconst) ln_ict  ln_trade ln_pop ln_gdpconst y_2003-y_2019, vce (robust)
+estat endog
+estat overid
+
+// estat firststage
+// The estat endog command shows whether your variable is endogenous. 
+// For example i believe my variable ln_fdi is endogenous (ln_fdi = instrument 1 + instrument 2 ...). 
+// It will test whether (ln_fdi = ) is endogenous.
+// H0: Variables are exogenous. 
+// If p-value is less than 1% (ideal) it means that (ln_fdi = ) or (your variable = ) is endogenous. OK.
+
+// estat overid 
+// estat overid "Test of overidentifying restrictions".
+// It shows  shows whether the instruments adopte for your endogenous variable, in my case ln_fdi (ln_fdi = instrument 1 + instrument 2 ...) are valid. 
+// Ideally,  should not significant at least 10%. That is, p-value showed be higher than 0.10 (10%). If you have a p-value between 0.10 and 0.05 it is not bad, however could indicate that your sellected instrumets are week. 
+// H0: all overidentifying restrictions are valid. 
+// Ha: all overidentifying restrictions are invalid (bad situation, which means you need to find better instruments). Do not ever use several instruments. This probabily will result in biased estimates. Again, sellect a lagged instrument and/or include other accord with other theorethical or empirical studies).
+
+// The same interpretation are valid for the following models
+// Model 2
+  ivregress 2sls ln_co2ton (ln_fin = ln_creditgdp l.ln_creditgdp ln_gdpppconst) ln_trade ln_pop ln_gdpconst y_2003-y_2019, vce (robust)
+ estat endog
+  estat overid
+
+ // Model 3
+ ivregress 2sls ln_co2ton (ln_ict = ln_medhighex l.ln_medhighex exportgdp) ln_trade ln_pop ln_gdpconst y_2003-y_2019, vce (robust)
+ estat endog
+ estat overid
+
+// ############################################
+// Two Stage Least Squares (2SLS) - ivregress
+// ############################################
+// The command "l.variable" (for example: l.ln_fdigdp) indicates the lag (if the year starts in 2003, for this variable it starts in 2004)
+// Model 1
+ivreg2 ln_co2ton (ln_fdi = ln_fdigdp l.ln_fdigdp  l.ln_gdpconst) ln_ict  ln_trade ln_pop ln_gdpconst y_2003-y_2019, robust endog(ln_fdi) 
+
+
+// The models below represent the same idea, but using the ivregress command instead of ivreg2. Note that the result is the same.
+// You must be wondering how to see if the variable is endogenous or if the instruments are valid.
+// The command at the end of the equation: endog("your endogenous variable") command is to check if the instrument you included is endogenous .
+// The Hansen test at the end shows if the instruments, for example (your endogenous variable = instrument 1, instrument 2 ....) are valid.
+// Be careful not to include too many instruments. Sometimes 1 is enough. If the test is significant, p < 0.10 or 10%, we have a potential problem of overindentification of instruments (it generates a problem with the validity of your model, generating bias in it).
+
+// Model 2
+// What variable could replace it? credit by banks over the country GDP (ln_creditgdp). 
+//  For example l.fin wouldn't be a problem for an instrument. It uses only the lagged variable of endogenous regressor doesn't always work. The idea is to find one or more substitutes.
+// Let's hope countries with higher  GDP per capita have a better financial system.
+
+ivreg2 ln_co2ton (ln_fin = ln_creditgdp l.ln_creditgdp ln_gdpppconst) ln_trade ln_pop ln_gdpconst y_2003-y_2019, robust endog(ln_fin) 
+
+// Model 3
+//  To act as an instrument for ict, what do you think it is similar to information and communications technology? I have selected the  medium and high technology exports and its lagged term. In this case, ln_medhighex and l.ln_medhighex
+ivreg2 ln_co2ton (ln_ict = ln_medhighex l.ln_medhighex exportgdp)  ln_trade ln_pop ln_gdpconst y_2003-y_2019, robust endog(ln_ict) 
