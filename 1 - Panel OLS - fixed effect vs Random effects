@@ -108,7 +108,7 @@ tabstat ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst , stat(N, mea
 // Perhaps you need the package:
 net install st0039
 // if not work use
-net from http://www.stata-journal.com/software/sj3-2/
+net describe st0039, from(http://www.stata-journal.com/software/sj3-2)
 
 // Ho: no first-order autocorrelation
 xtserial ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst 
@@ -117,7 +117,7 @@ xtserial ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst
 // Perform panel regression using the command: xtreg x1 x2 x3..., fe
 // The fe command must be included at the end after the comma. Fe = fixed effect.
 // Install
-ssc install xtest3 
+ssc install xttest3
 // Ho: Homocedasticity
 xtreg   ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst, fe
 xttest3	
