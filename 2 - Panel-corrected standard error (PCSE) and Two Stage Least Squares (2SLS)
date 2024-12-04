@@ -1,5 +1,5 @@
 // ##########################################################################
-// Panel-corrected standard error (PCSE) and Two Stage Least Squares (2SLS)
+// 2 - Panel-corrected standard error (PCSE) and Two Stage Least Squares (2SLS)
 // ##########################################################################
 
 // NOTE: If you have imported the data from the other example, you can jump these steps. Go to line 81.
