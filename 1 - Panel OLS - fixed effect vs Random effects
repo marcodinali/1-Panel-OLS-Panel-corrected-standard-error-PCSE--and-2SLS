@@ -1,0 +1,154 @@
+// ##############//#########################################
+// 1 - Panel OLS - fixed effect vs Random effects
+// #######################################################
+
+// First step after importing the variables is to define the panel
+import delimited "https://raw.githubusercontent.com/marcodinali/OLS-Regression-Prais-Winsten-regression-and-2SLS/refs/heads/main/Data_country.txt"
+
+// You can download and import manualy from a tx file too (always use dots in your data inseat of comma for all values). 
+// To mitigate potential pathing errors, it is advisable to employ a simplified file location, such as the "Desktop" directory, for initial file storage)
+
+// For macOS use the following path:
+
+insheet using "/Users/YourComputerName/Desktop/Panel.txt"
+
+// For Windows use the following path:
+
+insheet using "C:\Users\YourComputerName\Desktop\Panel.txt" 
+
+// Identify your panel 
+xtset id t 
+
+// The command "set more off" disables pagination, allowing the entirety of the output to be displayed simultaneously at once. 
+set more off
+
+// This data base is created by myself and is available for use under the specified LICENSE. You can use it under this license. 
+// The commands demonstrated herein may be adapted and replicated for application within your own respective panels and variables, enabling customization and extension of the presented techniques.
+
+// Description of variables.
+// co2ton = CO2 emissions (metric tons per capita).
+// fin = financial development of the country.
+// fdigdp = foreign direct investment by GDP (in thousands of dollars).
+// fdi = volume of FDi (inflow in thousands of dollars).
+// trade = volume of imports and exports (in thousands of dollars).
+// exportgdp = volume of goods exported (in thousands of dollars).
+// creditgdp = bank credit by GDP (in thousands of dollars).
+// ict = bank credit by GDP (in thousands of dollars).
+// medhighex = medium and high technology exported.
+// pop = total population
+// labor = total number of employed people
+// gdpcon = constant gdp (in thousands of dollars).
+// gdpcon = constant gdp per capita (in thousands of dollars).
+
+// To facilitate analysis, we will employ a logarithmic transformation of the variables. To transform the variables into natural logarithm use the command "gen" to generate a new variable name equal the variable with ln(your variable).
+// gen ln_your_new_variable = ln(your_variable_from_the_database)
+
+gen ln_co2ton = ln(co2ton)
+gen ln_fin = ln(fin)                    
+gen ln_fdigdp = ln(fdigdp)
+gen ln_fdi = ln(fdi)                    
+gen ln_trade= ln(trade)
+gen ln_exportgdp = ln(exportgdp)
+gen ln_creditgdp = ln(creditgdp)
+gen ln_ict = ln(ict)
+gen ln_medhighexp = ln(medhighex)
+gen ln_pop = ln(pop)
+gen ln_labor= ln(labor)
+gen ln_gdpconst = ln(gdpcon)
+gen ln_gdpppconst = ln(gdpppconst)
+
+// VIF problem
+// pwcorr is the command used to create the correlation matrix (pairwise correlations, Pearson method)
+// pwcorr x1 x2 x3 x4 ... 
+
+// If you want the correlation matrix with significance values install the following package:
+net install asdoc, from(http://fintechprofessor.com) replace
+// Just change the significance: sig star(.10) sig star(.05) sig star(.01). Always change the name of the document (Myfile.doc) and run a new one with different significance (the document is in the folder where you imported or saved you work and database)
+
+pwcorr ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_exportgdp ln_labor ln_gdpconst
+
+// With significance, use: , asdoc pwcorr x1 x2 x3 x4 ..., sig star(.01)
+asdoc pwcorr ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst, sig star(.05) replace
+
+
+// Variance Inflation Factor (VIF) values with problem 
+// Run a standard regression using the reg command.
+// As you can see, VIF is too high.
+// It is ecessary to remove one variable or multiple variables that are highly correlated with other.
+reg ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_exportgdp ln_labor ln_gdpconst
+vif
+
+// VIF without problem 
+// Variables removed: ln_exportgdp ln_labor. To clarify ln_exportgdp is highly correlated (same composition or construction) like ln_trade, while ln_labor is highly correlated (same composition or construction) of ln_pop. Have attention when you construct or select your variables.
+// Now the VIF is fine. It is not a desirable value but it still below the threshold limit of 10 (for more detail check: Hair, J. F., Jr., Black, W. C., Babin, B. J., & Anderson, R. E. (2010). Multivariate data analysis: A global perspective. Pearson Education International).
+reg ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst
+vif
+
+// Descriptive statistics
+sum  ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst
+
+// Also
+// n = number of observations, mean = average, sd = standard deviation, p50 = median, min = minimum and max = maximum values.
+tabstat ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst , stat(N, mean, sd, p50, min, max)
+
+// Wooldridge test for serial correlation
+// For more detail check: Wooldridge, J. M. (2009). Introductory econometrics: A modern approach. South-Western Cengage Learning.
+// Command: xtserial x1 x2 x3 x4...
+// Perhaps you need the package:
+net install st0039
+// if not work use
+net from http://www.stata-journal.com/software/sj3-2/
+
+// Ho: no first-order autocorrelation
+xtserial ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst 
+
+// Modified Wald test for groupwise heteroskedasticity test for heteroskedasticity. 
+// Perform panel regression using the command: xtreg x1 x2 x3..., fe
+// The fe command must be included at the end after the comma. Fe = fixed effect.
+// Install
+ssc install xtest3 
+// Ho: Homocedasticity
+xtreg   ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst, fe
+xttest3	
+
+// Jarque-Bera test
+// Install
+ssc install jb
+// Jarque-Bera test is a test to check if the distribution is normally distributed
+// Ho: normality for the distribution of the series
+reg ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst
+predict myresid, r
+sktest myresid
+jb myresid
+
+// Hausman test
+// Fixed effects first (fe).
+// Save the regression with the command: estimate store "any name".
+// For simplication I just used: estimate store fe
+// Do the same for random effects (re), estimate store re
+// sigmamore is a option that increase the efficiency of the analysis procedure
+
+xtreg  ln_co2ton ln_fin ln_fdigdp ln_ict ln_trade ln_pop ln_gdpconst, fe
+estimate store fe
+
+xtreg  ln_co2ton ln_fin ln_fdigdp ln_ict ln_trade ln_pop ln_gdpconst, re
+estimate store re
+hausman fe re, sigmamore
+
+// If the test shows p < 0.05 (5%) you should use the fe (fixed effect) command in the following steps for xtreg regression (OLS panel).
+// Use the vce(robust) or vce(cluster id) correct both the heteroskedasticity and autocorrelation.
+// Observation: xtreg command is used for standard panel OLS. Always use fe option for fixed effects. Standard OLS already uses random effects... If you get a Hausman estimate for a random effect, re (random effects) use re instead or remove it. 
+
+// Model 1 (usually test only your control variables)
+xtreg ln_co2ton ln_trade ln_pop ln_gdpconst y_2003-y_2020, fe vce(robust)
+// Model 2 (ln_fdi)
+xtreg ln_co2ton ln_fdi ln_trade ln_pop ln_gdpconst y_2003-y_2020, fe  vce(robust)
+// Model 3 (ln_fin)
+xtreg ln_co2ton ln_fin ln_trade ln_pop ln_gdpconst y_2003-y_2020, fe vce(robust)
+// Model 4 (ln_ict)
+xtreg ln_co2ton ln_ict ln_trade ln_pop ln_gdpconst y_2003-y_2020, fe vce(robust)
+
+// As you can see the results is not much good. There are possible explanations: 1) use more variables or change your control variables. Increase the number of cross-sections units (countries) and perhaps extend your time series ( in this case the time series is large enought).
+
+// Lest try a new estimator ? most times bad estimating results happen because you are using the wrong estimator. 
+// Please follow this step using the same data: 
