@@ -3,6 +3,7 @@
 // ##########################################################################
 
 // NOTE: If you have imported the data from the other example, you can jump these steps. Go to line 81.
+import delimited "https://raw.githubusercontent.com/marcodinali/1-Panel-OLS-Panel-corrected-standard-error-PCSE--and-2SLS/refs/heads/main/Data_country.txt"
 
 // You can download and import manualy from a tx file too (always use dots in your data inseat of comma for all values). 
 // To mitigate potential pathing errors, it is advisable to employ a simplified file location, such as the "Desktop" directory, for initial file storage)
