@@ -8,17 +8,23 @@ import delimited "https://raw.githubusercontent.com/marcodinali/1-Panel-OLS-Pane
 // You can download and import manualy from a tx file too (always use dots in your data inseat of comma for all values). 
 // To mitigate potential pathing errors, it is advisable to employ a simplified file location, such as the "Desktop" directory, for initial file storage)
 
+// #######################################################
 // For macOS use the following path:
-insheet using "/Users/YourComputerName/Desktop/Panel.txt"
+
+insheet using "/Users/YourComputerName/Desktop/Filename.txt"
 
 // For Windows use the following path:
-insheet using "C:\Users\YourComputerName\Desktop\Panel.txt" 
+
+insheet using "C:\Users\YourComputerName\Desktop\Filename.txt" 
+// #######################################################
 
 // Identify your panel 
 xtset id t 
 
 // The command "set more off" disables pagination, allowing the entirety of the output to be displayed simultaneously at once. 
 set more off
+
+// #######################################################
 
 // This data base is created by myself and is available for use under the specified LICENSE. You can use it under this license. 
 // The commands demonstrated herein may be adapted and replicated for application within your own respective panels and variables, enabling customization and extension of the presented techniques.
@@ -37,6 +43,7 @@ set more off
 // labor = total number of employed people
 // gdpcon = constant gdp (in thousands of dollars).
 // gdpcon = constant gdp per capita (in thousands of dollars).
+// #######################################################
 
 // To facilitate analysis, we will employ a logarithmic transformation of the variables. To transform the variables into natural logarithm use the command "gen" to generate a new variable name equal the variable with ln(your variable).
 // gen ln_your_new_variable = ln(your_variable_from_the_database)
@@ -56,7 +63,7 @@ gen ln_gdpconst = ln(gdpcon)
 gen ln_gdpppconst = ln(gdpppconst)
 
 // ############################################
-// Prais–Winsten regression
+// Panel-corrected-standard-error-PCSE
 // ############################################
 // command: xtpcse 
 // Why we are using the Prais–Winsten regression? We have problems of heteroskedasticity and first-order autocorrelation.
@@ -100,19 +107,17 @@ xtpcse ln_co2ton ln_ict ln_trade ln_pop ln_gdpconst y_2003-y_2020, hetonly corre
 estat endog
 estat overid
 
-// estat firststage
-// The estat endog command shows whether your variable is endogenous. 
+// The command "estat endog"  shows whether your variable is endogenous. 
 // For example i believe my variable ln_fdi is endogenous (ln_fdi = instrument 1 + instrument 2 ...). 
 // It will test whether (ln_fdi = ) is endogenous.
 // H0: Variables are exogenous. 
 // If p-value is less than 1% (ideal) it means that (ln_fdi = ) or (your variable = ) is endogenous. OK.
 
-// estat overid 
-// estat overid "Test of overidentifying restrictions".
-// It shows  shows whether the instruments adopte for your endogenous variable, in my case ln_fdi (ln_fdi = instrument 1 + instrument 2 ...) are valid. 
+// The command "estat overid": Test of overidentifying restrictions of instruments.
+// Bsically, it shows  shows whether the instruments adopte for your endogenous variable, in my case ln_fdi (ln_fdi = instrument 1 + instrument 2 ...) are valid. 
 // Ideally,  should not significant at least 10%. That is, p-value showed be higher than 0.10 (10%). If you have a p-value between 0.10 and 0.05 it is not bad, however could indicate that your sellected instrumets are week. 
 // H0: all overidentifying restrictions are valid. 
-// Ha: all overidentifying restrictions are invalid (bad situation, which means you need to find better instruments). Do not ever use several instruments. This probabily will result in biased estimates. Again, sellect a lagged instrument and/or include other accord with other theorethical or empirical studies).
+// Ha: all overidentifying restrictions are invalid (bad situation, which means you need to find better instruments). Do not ever use several instruments. This probabily will result in biased estimates. Again, sellect a lagged instrument and/or include other instrumental variable according with the theory or an empirical study).
 
 // The same interpretation are valid for the following models
 // Model 2
@@ -126,15 +131,15 @@ estat overid
  estat overid
 
 // ############################################
-// Two Stage Least Squares (2SLS) - ivregress
+// Two Stage Least Squares (2SLS) - ivreg2
 // ############################################
 // The command "l.variable" (for example: l.ln_fdigdp) indicates the lag (if the year starts in 2003, for this variable it starts in 2004)
-// Model 1
+// First, install ivreg2 and ranktest 
 ssc install ivreg2
-ssc install ranktest 
+ssc install ranktest
 
+// Model 1
 ivreg2 ln_co2ton (ln_fdi = ln_fdigdp l.ln_fdigdp)  ln_trade ln_pop ln_gdpconst y_2003-y_2019, robust endog(ln_fdi) 
-
 
 // The models below represent the same idea, but using the ivregress command instead of ivreg2. Note that the result is the same.
 // You must be wondering how to see if the variable is endogenous or if the instruments are valid.
@@ -143,12 +148,14 @@ ivreg2 ln_co2ton (ln_fdi = ln_fdigdp l.ln_fdigdp)  ln_trade ln_pop ln_gdpconst y
 // Be careful not to include too many instruments. Sometimes 1 is enough. If the test is significant, p < 0.10 or 10%, we have a potential problem of overindentification of instruments (it generates a problem with the validity of your model, generating bias in it).
 
 // Model 2
-// What variable could replace it? credit by banks over the country GDP (ln_creditgdp). 
-//  For example l.fin wouldn't be a problem for an instrument. It uses only the lagged variable of endogenous regressor doesn't always work. The idea is to find one or more substitutes.
-// Let's hope countries with higher  GDP per capita have a better financial system.
-
 ivreg2 ln_co2ton (ln_fin = ln_creditgdp l.ln_creditgdp ln_gdpppconst) ln_trade ln_pop ln_gdpconst y_2003-y_2019, robust endog(ln_fin) 
 
+// What variable could replace it? credit by banks over the country GDP (ln_creditgdp). 
+// For example l.fin wouldn't be a problem for an instrument. It uses only the lagged variable of endogenous regressor doesn't always work. The idea is to find one or more substitutes.
+// Let's hope countries with higher  GDP per capita have a better financial system.
+
 // Model 3
-//  To act as an instrument for ict, what do you think it is similar to information and communications technology? I have selected the  medium and high technology exports and its lagged term. In this case, ln_medhighex and l.ln_medhighex
 ivreg2 ln_co2ton (ln_ict = ln_medhighex l.ln_medhighex exportgdp)  ln_trade ln_pop ln_gdpconst y_2003-y_2019, robust endog(ln_ict) 
+
+//  To act as an instrument for ict, what do you think it is similar to information and communications technology? I have selected the  medium and high technology exports and its lagged term. In this case, ln_medhighex and l.ln_medhighex
+
