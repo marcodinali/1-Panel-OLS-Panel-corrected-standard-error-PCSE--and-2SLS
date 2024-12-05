@@ -9,7 +9,7 @@
 // First step after importing the variables is to define the panel
 import delimited "https://raw.githubusercontent.com/marcodinali/1-Panel-OLS-Panel-corrected-standard-error-PCSE--and-2SLS/refs/heads/main/Data_country.txt"
 
-// ##############//#########################################
+// #######################################################
 // 1 - Panel OLS - fixed effect vs Random effects
 // #######################################################
 
@@ -19,6 +19,7 @@ import delimited "https://raw.githubusercontent.com/marcodinali/OLS-Regression-P
 // You can download and import manualy from a tx file too (always use dots in your data inseat of comma for all values. Use txt file for the best.). 
 // To mitigate potential pathing errors, it is advisable to employ a simplified file location, such as the "Desktop" directory, for initial file storage)
 
+// #######################################################
 // For macOS use the following path:
 
 insheet using "/Users/YourComputerName/Desktop/Filename.txt"
@@ -26,6 +27,7 @@ insheet using "/Users/YourComputerName/Desktop/Filename.txt"
 // For Windows use the following path:
 
 insheet using "C:\Users\YourComputerName\Desktop\Filename.txt" 
+// #######################################################
 
 // Identify your panel 
 xtset id t 
@@ -33,9 +35,10 @@ xtset id t
 // The command "set more off" disables pagination, allowing the entirety of the output to be displayed simultaneously at once. 
 set more off
 
+// #######################################################
+
 // This data base is created by myself and is available for use under the specified LICENSE. You can use it under this license. 
 // The commands demonstrated herein may be adapted and replicated for application within your own respective panels and variables, enabling customization and extension of the presented techniques.
-
 // Description of variables.
 // co2ton = CO2 emissions (metric tons per capita).
 // fin = financial development of the country.
@@ -50,6 +53,7 @@ set more off
 // labor = total number of employed people
 // gdpcon = constant gdp (in thousands of dollars).
 // gdpcon = constant gdp per capita (in thousands of dollars).
+// #######################################################
 
 // To facilitate analysis, we will employ a logarithmic transformation of the variables. To transform the variables into natural logarithm use the command "gen" to generate a new variable name equal the variable with ln(your variable).
 // gen ln_your_new_variable = ln(your_variable_from_the_database)
@@ -68,7 +72,9 @@ gen ln_labor= ln(labor)
 gen ln_gdpconst = ln(gdpcon)
 gen ln_gdpppconst = ln(gdpppconst)
 
-// VIF problem
+// #######################################################
+// Pairwise correlations
+// #######################################################
 // pwcorr is the command used to create the correlation matrix (pairwise correlations, Pearson method)
 // pwcorr x1 x2 x3 x4 ... 
 
@@ -81,8 +87,10 @@ pwcorr ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_exportgdp ln_labor ln_g
 // With significance, use: , asdoc pwcorr x1 x2 x3 x4 ..., sig star(.01)
 asdoc pwcorr ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst, sig star(.05) replace
 
+// #######################################################
+// Variance Inflation Factor (VIF) 
+// #######################################################
 
-// Variance Inflation Factor (VIF) values with problem 
 // Run a standard regression using the reg command.
 // As you can see, VIF is too high.
 // It is ecessary to remove one variable or multiple variables that are highly correlated with other.
@@ -95,14 +103,18 @@ vif
 reg ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst
 vif
 
+// #######################################################
 // Descriptive statistics
+// #######################################################
 sum  ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst
 
 // Also
 // n = number of observations, mean = average, sd = standard deviation, p50 = median, min = minimum and max = maximum values.
 tabstat ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst , stat(N, mean, sd, p50, min, max)
 
+// #######################################################
 // Wooldridge test for serial correlation
+// #######################################################
 // For more detail check: Wooldridge, J. M. (2009). Introductory econometrics: A modern approach. South-Western Cengage Learning.
 // Command: xtserial x1 x2 x3 x4...
 // Perhaps you need the package:
@@ -112,7 +124,9 @@ net install st0039
 // Ho: no first-order autocorrelation
 xtserial ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst 
 
+// #######################################################
 // Modified Wald test for groupwise heteroskedasticity test for heteroskedasticity. 
+// #######################################################
 // Perform panel regression using the command: xtreg x1 x2 x3..., fe
 // The fe command must be included at the end after the comma. Fe = fixed effect.
 // Install
@@ -121,7 +135,10 @@ ssc install xttest3
 xtreg   ln_co2ton ln_fin ln_fdi ln_ict ln_trade ln_pop ln_gdpconst, fe
 xttest3	
 
+// #######################################################
 // Jarque-Bera test
+// #######################################################
+
 // Install
 ssc install jb
 // Jarque-Bera test is a test to check if the distribution is normally distributed
@@ -131,7 +148,10 @@ predict myresid, r
 sktest myresid
 jb myresid
 
+// #######################################################
 // Hausman test
+// #######################################################
+
 // Fixed effects first (fe).
 // Save the regression with the command: estimate store "any name".
 // For simplication I just used: estimate store fe
@@ -149,6 +169,10 @@ hausman fe re, sigmamore
 // Use the vce(robust) or vce(cluster id) correct both the heteroskedasticity and autocorrelation.
 // Observation: xtreg command is used for standard panel OLS. Always use fe option for fixed effects. Standard OLS already uses random effects... If you get a Hausman estimate for a random effect, re (random effects) use re instead or remove it. 
 
+// #######################################################
+//  Ordinary Least Squares (OLS) - fixed ffect (FE)
+// #######################################################
+
 // Model 1 (usually test only your control variables)
 xtreg ln_co2ton ln_trade ln_pop ln_gdpconst y_2003-y_2020, fe vce(robust)
 // Model 2 (ln_fdi)
@@ -161,4 +185,5 @@ xtreg ln_co2ton ln_ict ln_trade ln_pop ln_gdpconst y_2003-y_2020, fe vce(robust)
 // As you can see the results is not much good. There are possible explanations: 1) use more variables or change your control variables. Increase the number of cross-sections units (countries) and perhaps extend your time series ( in this case the time series is large enought).
 
 // Lest try a new estimator ? most times bad estimating results happen because you are using the wrong estimator. 
-// Please follow this step using the same data: 
+// Please follow this step using the same data: https://github.com/marcodinali/1-Panel-OLS-Panel-corrected-standard-error-PCSE--and-2SLS/blob/main/2%20-%20Panel-corrected%20standard%20error%20(PCSE)%20and%20Two%20Stage%20Least%20Squares%20(2SLS)
+
