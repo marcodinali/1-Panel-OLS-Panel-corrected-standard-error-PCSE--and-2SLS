@@ -10,20 +10,33 @@
 // Please cite this work when appropriate. This database was created by me and is available for use under the specified license// This data base is created by myself and is available for use under the specified LICENSE. You can use it under this license. 
 // This code is for Stata. Some commands may not work or may require specific packages. Please check your Stata version and installed packages before running the code.
 
-// NOTE: If you have imported the data from the other example, you can jump these steps. Go to line 81.
+// First step after importing the variables is to define the panel
 import delimited "https://raw.githubusercontent.com/marcodinali/1-Panel-OLS-Panel-corrected-standard-error-PCSE--and-2SLS/refs/heads/main/Data_country.txt"
 
-// You can download and import manualy from a tx file too (always use dots in your data inseat of comma for all values). 
+// #######################################################
+// 1 - Panel OLS - fixed effect vs Random effects
+// #######################################################
+
+// First step after importing the variables is to define the panel
+// This method only works on STATA 14 or more recent versions 
+
+import delimited "https://raw.githubusercontent.com/marcodinali/OLS-Regression-Prais-Winsten-regression-and-2SLS/refs/heads/main/Data_country.txt"
+
+// You can download and import manualy from a tx file too (always use dots in your data inseat of comma for all values. Use txt file for the best.). 
 // To mitigate potential pathing errors, it is advisable to employ a simplified file location, such as the "Desktop" directory, for initial file storage)
 
 // #######################################################
 // For macOS use the following path:
+// Download data: Data_country.txt and import using the path bellow. 
 
 insheet using "/Users/YourComputerName/Desktop/Filename.txt"
+// Example: insheet using "/Users/marcodinali/Desktop/Data_country.txt"
 
 // For Windows use the following path:
+// Example: insheet using "C:\Users\marcodinali/Desktop/Data_country.txt" 
 
 insheet using "C:\Users\YourComputerName\Desktop\Filename.txt" 
+
 // #######################################################
 
 // Identify your panel 
